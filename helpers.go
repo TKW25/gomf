@@ -19,9 +19,9 @@ const (
 // ending in the passed in extention.
 func GetRandomFileName(extension string) (fileName string, err error) {
 	sb := strings.Builder{}
-	sb.Grow(Config.Size)
+	sb.Grow(Config.FileNameLength)
 
-	for i, cache, remain := Config.Size-1, src.Int63(), idxMax; i >= 0; {
+	for i, cache, remain := Config.FileNameLength-1, src.Int63(), idxMax; i >= 0; {
 		if remain == 0 {
 			cache, remain = src.Int63(), idxMax
 		}
@@ -38,7 +38,7 @@ func GetRandomFileName(extension string) (fileName string, err error) {
 		remain--
 	}
 
-	_, err = sb.WriteString("." + extension)
+	_, err = sb.WriteString(extension)
 	if err != nil {
 		return fileName, err
 	}
@@ -46,4 +46,14 @@ func GetRandomFileName(extension string) (fileName string, err error) {
 	fileName = sb.String()
 
 	return fileName, err
+}
+
+// Contains returns true if vals contains val, otherwise returns false
+func Contains(vals []string, val string) bool {
+	for _, v := range vals {
+		if v == val {
+			return true
+		}
+	}
+	return false
 }

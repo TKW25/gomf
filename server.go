@@ -1,20 +1,30 @@
 package main
 
-import "fmt"
+import (
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/gorilla/mux"
+)
 
 func main() {
-	// people = append(people, Person{ID: "1", Firstname: "John", Lastname: "Doe", Address: &Address{City: "City X", State: "State X"}})
-	// people = append(people, Person{ID: "2", Lastname: "Doe", Address: &Address{City: "City Z", State: "State Y"}})
-	// people = append(people, Person{ID: "3", Firstname: "Francis", Lastname: "Sunday"})
 
-	// router := mux.NewRouter()
-	// router.HandleFunc("/people", GetPeople).Methods("GET")
-	// router.HandleFunc("/people/{id}", GetPerson).Methods("GET")
-	// router.HandleFunc("/people/{id}", CreatePerson).Methods("POST")
-	// router.HandleFunc("/people/{id}", DeletePerson).Methods("DELETE")
-	// log.Fatal(http.ListenAndServe(":8000", router))
-	LoadConfig("config/gomf.config")
-	fmt.Println(Config)
-	fileName, _ := GetRandomFileName("png")
-	fmt.Println(fileName)
+	LoadConfig("config/gomf.config") //TODO: should get path as a variable
+
+	// Check if directory exists, if it doesn't create it
+	if _, err := os.Stat(Config.UploadDir); os.IsNotExist(err) {
+		log.Println("Upload folder doesn't exist, creating it...")
+		if err = os.Mkdir(Config.UploadDir, 0777); err != nil {
+			log.Println(3)
+			log.Fatalln(err)
+		}
+	} else if err != nil {
+		log.Println(4)
+		log.Fatalln(err)
+	}
+
+	router := mux.NewRouter()
+	router.HandleFunc("/upload", ReceiveFile).Methods("POST")
+	log.Fatal(http.ListenAndServe(":8000", router))
 }
