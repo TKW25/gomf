@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"mime"
@@ -28,9 +27,7 @@ func ReceiveFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var mimeBuf [512]byte // http.DetectContentType will only use the first 512 bytes
-	_, err = io.ReadFull(file, mimeBuf[:])
-
-	if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
+	if _, err = io.ReadFull(file, mimeBuf[:]); err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
 		log.Println("An unexpected error occured while reading the file for mimeType detection")
 		log.Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -39,27 +36,20 @@ func ReceiveFile(w http.ResponseWriter, r *http.Request) {
 
 	// get new filename and find the extension for it
 	var newFileName string
-	if ext := getExtension(strings.Split(header.Filename, "."), mimeBuf[:]); ext != "" {
-		_, err := file.Seek(0, 0)
-		if err != nil {
-			log.Println("Failed resetting file")
-			log.Println(err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
+	ext := getExtension(header.Filename, mimeBuf[:])
 
-		newFileName, _ = GetRandomFileName(ext)
-		fmt.Println(newFileName)
-	} else {
-		log.Println("Failed to get an extension")
+	_, err = file.Seek(0, 0) // reset file to copy it
+	if err != nil {
+		log.Println("Failed resetting file")
+		log.Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	//TODO: Database management
+	newFileName, _ = GetRandomFileName(ext)
 
 	// Create file
-	var fp string = filepath.Join(Config.UploadDir, newFileName)
+	fp := filepath.Join(Config.UploadDir, newFileName)
 	fo, err := os.Create(fp)
 	if err != nil {
 		log.Println("Failed creating file")
@@ -69,7 +59,7 @@ func ReceiveFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer fo.Close()
 
-	if runtime.GOOS != "windows" { // Chmod is finicky on windows, don't do it.  Primarily for development.
+	if runtime.GOOS != "windows" { // Chmod is finicky on windows, don't do it.  For development.
 		if err := fo.Chmod(0777); err != nil {
 			log.Println("Error changing file permissions")
 			log.Println(err)
@@ -80,52 +70,42 @@ func ReceiveFile(w http.ResponseWriter, r *http.Request) {
 
 	// Write file
 	if n, err := io.Copy(fo, file); err != nil {
-		_ = os.Remove(fp)
 		log.Println("Error copying file")
 		log.Println(err)
+		if err = os.Remove(fp); err != nil {
+			log.Println("err")
+		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	} else if n != header.Size {
-		_ = os.Remove(fp)
-		log.Printf("Expect %v but only read %v", header.Size, n)
+		if err = os.Remove(fp); err != nil {
+			log.Println("err")
+		}
+		log.Printf("Expect %v but only read %v\n", header.Size, n)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
+	//TODO: Database management
 
 	w.Header().Set("Connection", "close")
 	w.WriteHeader(http.StatusOK)
 	// TODO: Set response URL
 }
 
-func getExtension(fileName []string, buf []byte) (ext string) {
-	var fileExt string = ""
-	if len(fileName) > 1 {
-		fileExt = "." + fileName[len(fileName)-1]
-	}
-	mimeExt, err := mime.ExtensionsByType(http.DetectContentType(buf))
-
-	if err != nil {
-		log.Println(err)
-		return ""
-	} else if mimeExt == nil && fileExt == "" {
-		log.Println("ERROR: Found no possible file extensions")
-		//TODO: What do I do in this case?
-		return ""
-	} else if mimeExt == nil {
-		log.Println("WARN: Failed to find a valid mimeType, using passed in extention")
-		ext = fileExt
-	} else if fileExt == "" {
-		if len(mimeExt) == 1 {
-			log.Println("Using detected extension")
-			ext = mimeExt[0]
-		} else {
-			log.Println("WARN: Found multiple potential mimeTypse and no fileExt")
-			//TODO: What should be done here
-			return ""
-		}
+// getExtension either determines the extension through the mime type if possible,
+// or simply uses the original file extension.
+func getExtension(fileName string, buf []byte) (ext string) {
+	mimeExt, _ := mime.ExtensionsByType(http.DetectContentType(buf))
+	if mimeExt != nil && len(mimeExt) == 1 {
+		ext = mimeExt[0]
 	} else {
-		log.Println("Using provided extension")
+		fileExt := ""
+		if parts := strings.Split(fileName, "."); len(parts) > 1 {
+			fileExt = "." + parts[len(parts)-1]
+		}
 		ext = fileExt
 	}
+
 	return ext
 }
