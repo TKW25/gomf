@@ -4,18 +4,26 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-
-	"github.com/alecthomas/units"
 )
 
 type configuration struct {
 	FileNameLength int    // The length of filenames
 	UploadDir      string // The directory to upload files to
 	MaxFileSize    int64  // The maximum file size to be accepted
+	database       database
+}
+
+// databse contains the config information for the database
+type database struct {
+	host     string
+	user     string
+	password string
+	dbname   string
+	port     int
 }
 
 // Global singleton holding the configuration information
-var Config *configuration
+var Config *configuration // TODO: probably don't need to export this since it's a singleton
 
 // LoadConfig sets Config to the values provided by the provided configuration file.
 // If no configuration file is provided, it will set Config to the default values.
@@ -23,13 +31,6 @@ var Config *configuration
 func LoadConfig(path string) {
 	if Config != nil {
 		log.Println("INFO: Config is a singleton")
-		return
-	}
-
-	if path == "" {
-		log.Println("WARNING: No path provided, setting Config to the default...")
-		path = "files"
-		Config = &configuration{20, "files", int64(units.Megabyte) * 512}
 		return
 	}
 

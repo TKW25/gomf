@@ -46,7 +46,28 @@ func ReceiveFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newFileName, _ = GetRandomFileName(ext)
+	const maxRetries = 10
+	try := 1
+	for {
+		newFileName, err = GetRandomFileName(ext)
+		if err != nil {
+			log.Println("Failed getting a random file name")
+			log.Println(err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if !HasName(newFileName) {
+			break
+		}
+
+		if try == maxRetries {
+			log.Println("Exceeded the maximum number of retries")
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		try++
+	}
 
 	// Create file
 	fp := filepath.Join(Config.UploadDir, newFileName)
@@ -73,13 +94,13 @@ func ReceiveFile(w http.ResponseWriter, r *http.Request) {
 		log.Println("Error copying file")
 		log.Println(err)
 		if err = os.Remove(fp); err != nil {
-			log.Println("err")
+			log.Println(err)
 		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	} else if n != header.Size {
 		if err = os.Remove(fp); err != nil {
-			log.Println("err")
+			log.Println(err)
 		}
 		log.Printf("Expect %v but only read %v\n", header.Size, n)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -87,6 +108,11 @@ func ReceiveFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//TODO: Database management
+	// Desired Behavior:
+	// Holds the the metadata for all uploaded images (pk hash, original name, new name, size, upload date)
+	// Should check the new name if the generated name has already been used, if it has get a new one
+	// Should check if the newly uploaded image's hash is already in the database, if it is, just return that instead
+	// Do I want to deal with user accounts and remembering passed uploads?
 
 	w.Header().Set("Connection", "close")
 	w.WriteHeader(http.StatusOK)

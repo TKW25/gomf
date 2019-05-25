@@ -1,7 +1,11 @@
 package main
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
+	"io"
 	"math/rand"
+	"mime/multipart"
 	"strings"
 	"time"
 )
@@ -46,6 +50,15 @@ func GetRandomFileName(extension string) (fileName string, err error) {
 	fileName = sb.String()
 
 	return fileName, err
+}
+
+func GetHash(file *multipart.File) (string, error) {
+	hash := sha1.New()
+	if _, err := io.Copy(hash, *file); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 // Contains returns true if vals contains val, otherwise returns false
