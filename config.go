@@ -10,16 +10,17 @@ type configuration struct {
 	FileNameLength int    // The length of filenames
 	UploadDir      string // The directory to upload files to
 	MaxFileSize    int64  // The maximum file size to be accepted
-	database       database
+	Database       database
 }
 
 // databse contains the config information for the database
 type database struct {
-	host     string
-	user     string
-	password string
-	dbname   string
-	port     int
+	Host      string
+	User      string
+	Password  string
+	DBname    string
+	Port      int
+	TableName string
 }
 
 // Global singleton holding the configuration information

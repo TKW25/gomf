@@ -15,7 +15,7 @@ func main() {
 	}
 
 	LoadConfig(os.Args[1])
-	SetDatabaseInfo()
+	Setup()
 
 	// Check if directory exists, if it doesn't create it
 	if _, err := os.Stat(Config.UploadDir); os.IsNotExist(err) {
