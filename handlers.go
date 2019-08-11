@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"mime"
@@ -9,15 +10,37 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
 func ReceiveFile(w http.ResponseWriter, r *http.Request) {
+	//TODO: receiving malformed requests causes things to blow up
+	//TODO: I think there's a memory leak somewhere https://golang.org/doc/diagnostics.html
 	// Receive file
 	file, header, err := r.FormFile("FileFormName")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer file.Close()
+
+	var metaData MetaData
+
+	metaData.hash, err = GetHash(&file)
+	if err != nil {
+		log.Println(err)
+		log.Println("Failed generating the hash")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the hash already exists, if it does it's likely the same file
+	if HasHash(metaData.hash) {
+		log.Println(fmt.Sprintf("Uploaded file hash %v already exists on the server", metaData.hash))
+		w.Header().Set("Connection", "close")
+		w.WriteHeader(http.StatusOK)
+		// TODO: Set response URL
+		return
+	}
 
 	// Check if the uploaded file is larger than what we want to allow to be uploaded
 	if header.Size > Config.MaxFileSize {
@@ -46,6 +69,7 @@ func ReceiveFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Ensure there's no name collisions
 	const maxRetries = 10
 	try := 1
 	for {
@@ -89,7 +113,7 @@ func ReceiveFile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Write file
+	// Write file to disk
 	if n, err := io.Copy(fo, file); err != nil {
 		log.Println("Error copying file")
 		log.Println(err)
@@ -107,12 +131,12 @@ func ReceiveFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO: Database management
-	// Desired Behavior:
-	// Holds the the metadata for all uploaded images (pk hash, original name, new name, size, upload date)
-	// Should check the new name if the generated name has already been used, if it has get a new one
-	// Should check if the newly uploaded image's hash is already in the database, if it is, just return that instead
-	// Do I want to deal with user accounts and remembering passed uploads?
+	// Set the rest of the metadata and write it to the database
+	metaData.date = time.Now()
+	metaData.n_name = newFileName
+	metaData.o_name = header.Filename
+	metaData.size = header.Size
+	WriteMetadata(metaData)
 
 	w.Header().Set("Connection", "close")
 	w.WriteHeader(http.StatusOK)

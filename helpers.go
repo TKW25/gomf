@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"io"
+	"log"
 	"math/rand"
 	"mime/multipart"
 	"strings"
@@ -58,15 +59,11 @@ func GetHash(file *multipart.File) (string, error) {
 		return "", err
 	}
 
-	return hex.EncodeToString(hash.Sum(nil)), nil
-}
-
-// Contains returns true if vals contains val, otherwise returns false
-func Contains(vals []string, val string) bool {
-	for _, v := range vals {
-		if v == val {
-			return true
-		}
+	if _, err := (*file).Seek(0, 0); err != nil {
+		log.Println(err)
+		log.Printf("Failed seeking to the start of the file")
+		return "", err
 	}
-	return false
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
