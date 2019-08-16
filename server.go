@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -28,6 +29,8 @@ func main() {
 	}
 
 	router := mux.NewRouter()
-	router.HandleFunc("/upload", ReceiveFile).Methods("POST") //TODO: add end point to config file and listen here
-	log.Fatal(http.ListenAndServe(":8000", router))           //TODO: add port to config file nad load it here
+	//TODO: Might want to grab some of this info from environment variables rather than the config file
+	router.HandleFunc(fmt.Sprintf("%v", Config.UploadEndpoint), ReceiveFile).Methods("POST")
+	router.Use(LoggingMiddleware, PanicMiddleware)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", Config.UploadPort), router))
 }

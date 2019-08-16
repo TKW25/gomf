@@ -14,12 +14,15 @@ import (
 )
 
 func ReceiveFile(w http.ResponseWriter, r *http.Request) {
-	//TODO: receiving malformed requests causes things to blow up
+	//TODO: Doesn't seem like I can cleanly get docker working on this system, stand up VPS and do it there
 	//TODO: I think there's a memory leak somewhere https://golang.org/doc/diagnostics.html
 	// Receive file
 	file, header, err := r.FormFile("FileFormName")
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		log.Println("received a malformed request")
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
 	}
 	defer file.Close()
 
