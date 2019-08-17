@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+    gomf:
+        image: gomf
+        build:
+            context: .
+            dockerfile: ./docker/go/Dockerfile
+        restart: always
+        ports: 
+            - "8080:8080"
+        networks:
+            - mynet
+    db:
+        image: db
+        build: 
+            context: ./docker/postgres
+        restart: always
+        ports:
+            - "8001:5432"
+        environment:
+            POSTGRES_USERNAME: postgres
+            POSTGRES_PASSWORD: postgres
+        networks:
+            - mynet
+
+networks:
+    mynet:
+        driver: bridge
