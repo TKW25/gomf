@@ -14,4 +14,6 @@ RUN go build -o main .
 
 EXPOSE 8080
 
+RUN mkdir -p /gomf/files
+
 CMD ["./main", "config/gomf.config"]

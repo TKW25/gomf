@@ -1,4 +1,4 @@
-version: '3'
+version: '3.2'
 
 services:
     gomf:
@@ -9,6 +9,10 @@ services:
         restart: always
         ports: 
             - "8080:8080"
+        volumes:
+            - type: bind
+              source: /gomf/files
+              target: /gomf/files
         networks:
             - mynet
     db:
@@ -21,6 +25,10 @@ services:
         environment:
             POSTGRES_USERNAME: postgres
             POSTGRES_PASSWORD: postgres
+        volumes:
+            - type: bind
+              source: /gomf/postgres-data
+              target: /var/lib/postgresql/data
         networks:
             - mynet
 
