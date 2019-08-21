@@ -13,8 +13,6 @@ services:
             - type: bind
               source: /gomf/files
               target: /gomf/files
-        networks:
-            - mynet
     db:
         image: db
         build: 
@@ -29,9 +27,3 @@ services:
             - type: bind
               source: /gomf/postgres-data
               target: /var/lib/postgresql/data
-        networks:
-            - mynet
-
-networks:
-    mynet:
-        driver: bridge
