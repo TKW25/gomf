@@ -27,3 +27,12 @@ services:
             - type: bind
               source: /gomf/postgres-data
               target: /var/lib/postgresql/data
+    web:
+        image: nginx
+        restart: always
+        ports:
+            - "8090:80"
+        environment:
+            - NGINX_HOST=165.22.38.246
+            - NGINX_PORT=80
+

@@ -14,7 +14,6 @@ import (
 )
 
 func ReceiveFile(w http.ResponseWriter, r *http.Request) {
-	//TODO: Doesn't seem like I can cleanly get docker working on this system, stand up VPS and do it there
 	//TODO: I think there's a memory leak somewhere https://golang.org/doc/diagnostics.html
 	// Receive file
 	file, header, err := r.FormFile("FileFormName")

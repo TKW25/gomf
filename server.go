@@ -11,9 +11,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		// TODO: Is the below usage string correctly formatted for Go?
-        log.Printf("%v\n", os.Args)
-		log.Fatalln("ERROR: No config path provided\nUSAGE: go run server.go configPath")
+		log.Fatalln("USAGE: gomf config_path")
 	}
 
 	LoadConfig(os.Args[1])
