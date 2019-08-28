@@ -14,6 +14,6 @@ RUN go build -o gomf .
 
 EXPOSE 8080
 
-RUN mkdir -p /gomf/files
+RUN mkdir -p /files
 
 CMD ["./gomf", "config/gomf.config"]

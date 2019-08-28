@@ -12,7 +12,7 @@ services:
         volumes:
             - type: bind
               source: /gomf/files
-              target: /gomf/files
+              target: /files
     db:
         image: db
         build: 
@@ -30,8 +30,14 @@ services:
     web:
         image: nginx
         restart: always
+        build:
+            context: ./docker/nginx
+        volumes:
+            - type: bind
+              source: /gomf/files
+              target: /gomf/files
         ports:
-            - "8090:80"
+            - "80:80"
         environment:
             - NGINX_HOST=165.22.38.246
             - NGINX_PORT=80
